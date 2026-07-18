@@ -8,26 +8,19 @@ services:
 
     command:
       - "--api.dashboard=true"
-
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=proxy"
 
-      - "--providers.file.directory=/config"
-      - "--providers.file.watch=true"
-
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
 
     ports:
       - "80:80"
-      - "443:443"
       - "8080:8080"
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./config:/config:ro
-      - /home/bitforge/homelab/certs:/certs:ro
+
     networks:
       - proxy
 

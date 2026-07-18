@@ -1,0 +1,35 @@
+# Ignore only runtime application data
+data/portainer/
+
+# Backups
+backups/
+
+# Local TLS certificates
+certs/
+*.pem
+*-key.pem
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db# Runtime data
+data/
+
+# Backups
+backups/
+
+# TLS certificates
+certs/
+*.pem
+*-key.pem
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db

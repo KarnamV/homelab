@@ -1,0 +1,33 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+
+    restart: unless-stopped
+
+    security_opt:
+      - no-new-privileges:true
+
+    volumes:
+      - ~/homelab/data/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - proxy
+      - portainer
+
+    labels:
+      - traefik.enable=true
+
+      - traefik.http.routers.portainer.entrypoints=websecure
+      - traefik.http.routers.portainer.rule=Host(`portainer.YOUR_DOMAIN`)
+      - traefik.http.routers.portainer.tls=true
+
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+
+networks:
+  proxy:
+    external: true
+
+  portainer:
+    name: portainer

@@ -1,0 +1,11 @@
+tls:
+  certificates:
+    - certFile: /certs/bitforge.pem
+      keyFile: /certs/bitforge-key.pem
+
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true

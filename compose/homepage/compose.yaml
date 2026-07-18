@@ -13,20 +13,30 @@ services:
     environment:
       PUID: 1000
       PGID: 1000
-      HOMEPAGE_ALLOWED_HOSTS: 192.168.0.165,192.168.0.165:3000,localhost,localhost:3000
+      HOMEPAGE_ALLOWED_HOSTS: 192.168.0.165,192.168.0.165:3000,localhost,localhost:3000,bitforge,bitforge:3000
 
     networks:
-      - homepage_default
+      - homepage
       - proxy
 
     labels:
       - traefik.enable=true
-      - traefik.http.routers.homepage.rule=Host(`192.168.0.165`)
+
+      # HTTP
       - traefik.http.routers.homepage.entrypoints=web
+      - traefik.http.routers.homepage.rule=Host(`bitforge`)
+      - traefik.http.routers.homepage.middlewares=redirect-to-https@file
+
+      # HTTPS
+      - traefik.http.routers.homepage-secure.entrypoints=websecure
+      - traefik.http.routers.homepage-secure.rule=Host(`bitforge`)
+      - traefik.http.routers.homepage-secure.tls=true
+
       - traefik.http.services.homepage.loadbalancer.server.port=3000
 
 networks:
-  homepage_default:
+  homepage:
+    name: homepage
     driver: bridge
 
   proxy:
