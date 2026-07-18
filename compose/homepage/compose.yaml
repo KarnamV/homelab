@@ -1,0 +1,33 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ../../data/homepage:/app/config
+
+    environment:
+      PUID: 1000
+      PGID: 1000
+      HOMEPAGE_ALLOWED_HOSTS: 192.168.0.165,192.168.0.165:3000,localhost,localhost:3000
+
+    networks:
+      - homepage_default
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homepage.rule=Host(`192.168.0.165`)
+      - traefik.http.routers.homepage.entrypoints=web
+      - traefik.http.services.homepage.loadbalancer.server.port=3000
+
+networks:
+  homepage_default:
+    driver: bridge
+
+  proxy:
+    external: true

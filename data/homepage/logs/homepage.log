@@ -1,0 +1,79 @@
+[2026-07-18T13:37:54.888Z] info: kubernetes.yaml was copied to the config folder
+[2026-07-18T13:39:02.962Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.190Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.194Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.196Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.209Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.218Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.224Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.231Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.239Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.243Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.245Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:03.254Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:48.087Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:48.090Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:48.989Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.027Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.033Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.039Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.044Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.048Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.050Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.052Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.055Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.060Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.061Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.062Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:49.082Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.463Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.488Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.491Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.495Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.499Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.502Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.508Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.519Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.522Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.525Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.527Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.530Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:50.540Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.080Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.102Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.105Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.109Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.113Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.116Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.124Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.129Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.132Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.135Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.137Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.140Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:39:51.152Z] error: Host validation failed for: 192.168.0.165:3000. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T13:41:37.542Z] info: docker.yaml was copied to the config folder
+[2026-07-18T13:41:37.543Z] info: services.yaml was copied to the config folder
+[2026-07-18T13:41:37.543Z] info: bookmarks.yaml was copied to the config folder
+[2026-07-18T13:41:37.543Z] info: widgets.yaml was copied to the config folder
+[2026-07-18T13:41:37.544Z] info: custom.css was copied to the config folder
+[2026-07-18T13:41:37.544Z] info: custom.js was copied to the config folder
+[2026-07-18T13:41:37.553Z] info: proxmox.yaml was copied to the config folder
+[2026-07-18T14:18:12.046Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.310Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.318Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.329Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.344Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.346Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.348Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.350Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.352Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.356Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.361Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:12.363Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:25.704Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:25.706Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:25.714Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:57.241Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:57.244Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-18T14:18:57.248Z] error: Host validation failed for: 192.168.0.165. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
