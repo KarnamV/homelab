@@ -1,0 +1,27 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+
+    volumes:
+      - ../../data/uptime-kuma:/app/data
+
+    networks:
+      - proxy
+      - uptime-kuma
+
+    labels:
+      - traefik.enable=true
+
+      - traefik.http.routers.uptime.rule=Host(`uptime.bitforge`)
+      - traefik.http.routers.uptime.entrypoints=websecure
+      - traefik.http.routers.uptime.tls=true
+
+      - traefik.http.services.uptime.loadbalancer.server.port=3001
+
+networks:
+  proxy:
+    external: true
+
+  uptime-kuma:
