@@ -1,0 +1,23 @@
+services:
+  uptime-kuma-sync:
+    build: .
+    container_name: uptime-kuma-sync
+    restart: unless-stopped
+
+    environment:
+      UPTIME_URL: "http://uptime-kuma:3001"
+      UPTIME_USERNAME: ${UPTIME_USERNAME}
+      UPTIME_PASSWORD: ${UPTIME_PASSWORD}
+      SYNC_INTERVAL: "300"
+      UPTIME_PRUNE_ORPHANED: "true"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../../data/uptime-kuma-sync:/app/state
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
