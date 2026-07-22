@@ -16,3 +16,9 @@
     - My Third Service:
         href: http://localhost/
         description: Homepage is 😎
+
+- Identity:
+    - Authentik:
+        href: https://authentik.bitforge
+        description: Identity provider (SSO / OAuth2 / SAML / LDAP)
+        icon: authentik.png
