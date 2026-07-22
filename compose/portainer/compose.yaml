@@ -24,6 +24,10 @@ services:
       - traefik.http.routers.portainer.priority=10
       - traefik.http.routers.portainer.middlewares=authentik-forwardauth@docker
       - traefik.http.services.portainer.loadbalancer.server.port=9000
+      - uptime.enable=true
+      - uptime.name=Portainer
+      - uptime.url=http://portainer:9000
+      - uptime.group=Infrastructure
 
 networks:
   proxy:
