@@ -2,23 +2,32 @@
 # For configuration options and examples, please see:
 # https://gethomepage.dev/configs/services/
 
-- My First Group:
-    - My First Service:
-        href: http://localhost/
-        description: Homepage is awesome
-
-- My Second Group:
-    - My Second Service:
-        href: http://localhost/
-        description: Homepage is the best
-
-- My Third Group:
-    - My Third Service:
-        href: http://localhost/
-        description: Homepage is 😎
-
 - Identity:
     - Authentik:
         href: https://authentik.bitforge
         description: Identity provider (SSO / OAuth2 / SAML / LDAP)
         icon: authentik.png
+
+- Infrastructure:
+    - Portainer:
+        href: https://portainer.bitforge
+        description: Docker management UI (behind Authentik SSO)
+        icon: portainer.png
+    - Uptime Kuma:
+        href: https://uptime.bitforge
+        description: Uptime monitoring dashboard
+        icon: uptime-kuma.png
+
+- Monitoring:
+    - Grafana:
+        href: https://grafana.bitforge
+        description: Metrics and log dashboards
+        icon: grafana.png
+    - Prometheus:
+        href: https://prometheus.bitforge
+        description: Metrics collection and alerting
+        icon: prometheus.png
+    - cAdvisor:
+        href: https://cadvisor.bitforge
+        description: Per-container resource usage
+        icon: cadvisor.png
