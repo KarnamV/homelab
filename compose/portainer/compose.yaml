@@ -21,6 +21,8 @@ services:
       - traefik.http.routers.portainer.rule=Host(`portainer.bitforge`)
       - traefik.http.routers.portainer.entrypoints=websecure
       - traefik.http.routers.portainer.tls=true
+      - traefik.http.routers.portainer.priority=10
+      - traefik.http.routers.portainer.middlewares=authentik-forwardauth@docker
       - traefik.http.services.portainer.loadbalancer.server.port=9000
 
 networks:

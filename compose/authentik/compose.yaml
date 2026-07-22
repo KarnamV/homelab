@@ -69,6 +69,21 @@ services:
       - traefik.http.routers.authentik.tls=true
       - traefik.http.services.authentik.loadbalancer.server.port=9000
 
+      # Forward-auth (Phase 2): embedded outpost handles auth checks + the
+      # /outpost.goauthentik.io/ callback path on each protected app's own
+      # host. One router per protected host is needed for that callback path
+      # — this one is for portainer.bitforge (see compose/portainer/compose.yaml
+      # for the middleware attachment on Portainer's own router).
+      - traefik.http.middlewares.authentik-forwardauth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/traefik
+      - traefik.http.middlewares.authentik-forwardauth.forwardauth.trustForwardHeader=true
+      - traefik.http.middlewares.authentik-forwardauth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
+
+      - traefik.http.routers.authentik-outpost-portainer.rule=Host(`portainer.bitforge`) && PathPrefix(`/outpost.goauthentik.io/`)
+      - traefik.http.routers.authentik-outpost-portainer.entrypoints=websecure
+      - traefik.http.routers.authentik-outpost-portainer.tls=true
+      - traefik.http.routers.authentik-outpost-portainer.priority=15
+      - traefik.http.routers.authentik-outpost-portainer.service=authentik
+
   authentik-worker:
     image: ghcr.io/goauthentik/server:2026.5.5
     container_name: authentik-worker
