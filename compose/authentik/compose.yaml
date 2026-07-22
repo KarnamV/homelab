@@ -1,0 +1,109 @@
+services:
+  authentik-postgresql:
+    image: docker.io/library/postgres:16-alpine
+    container_name: authentik-postgresql
+    restart: unless-stopped
+
+    security_opt:
+      - no-new-privileges:true
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_DB: ${PG_DB:-authentik}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS:?PG_PASS is required}
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${PG_DB:-authentik} -U ${PG_USER:-authentik}"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+    volumes:
+      - ../../data/authentik/postgres:/var/lib/postgresql/data
+
+    networks:
+      - authentik
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.5.5
+    container_name: authentik-server
+    restart: unless-stopped
+
+    security_opt:
+      - no-new-privileges:true
+
+    command: server
+
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+
+    shm_size: 512mb
+
+    env_file:
+      - .env
+
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY is required}
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+    volumes:
+      - ../../data/authentik/media:/media
+      - ../../data/authentik/templates:/templates
+
+    networks:
+      - proxy
+      - authentik
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.authentik.rule=Host(`authentik.bitforge`)
+      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.tls=true
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.5.5
+    container_name: authentik-worker
+    restart: unless-stopped
+
+    command: worker
+    user: root
+
+    depends_on:
+      authentik-postgresql:
+        condition: service_healthy
+
+    shm_size: 512mb
+
+    env_file:
+      - .env
+
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY is required}
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgresql
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../../data/authentik/media:/media
+      - ../../data/authentik/certs:/certs
+      - ../../data/authentik/templates:/templates
+
+    networks:
+      - authentik
+
+networks:
+  proxy:
+    external: true
+
+  authentik:
