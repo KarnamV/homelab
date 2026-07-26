@@ -1,0 +1,45 @@
+name: Build and deploy
+
+# GitOps pipeline: push to main -> build image(s) -> push to GHCR -> roll
+# out via Docker Swarm on the homelab (health-checked, start-first,
+# auto-rollback on failure — see homelab/docs/gitops-pipeline.md).
+# Reusable workflows live in KarnamV/homelab so this file stays this thin.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # One entry per service's source tree, plus the stack file and this
+      # workflow itself — so unrelated changes (docs, etc.) don't trigger
+      # a deploy. Replace with this app's actual paths.
+      - "{{SERVICE_1_PATH}}/**"
+      - "{{STACK_FILE}}"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: KarnamV/homelab/.github/workflows/build-push.yml@master
+    with:
+      image_prefix: {{IMAGE_PREFIX}}
+      # One {name, context, dockerfile} object per service that gets built
+      # and deployed. Do NOT include the database or other stock-image
+      # services here — only things this repo actually builds.
+      services: |
+        [
+          {"name": "{{SERVICE_1_NAME}}", "context": "{{SERVICE_1_CONTEXT}}", "dockerfile": "{{SERVICE_1_DOCKERFILE}}"}
+        ]
+
+  deploy:
+    needs: build
+    uses: KarnamV/homelab/.github/workflows/deploy-stack.yml@master
+    with:
+      stack_name: {{STACK_NAME}}
+      compose_file: {{STACK_FILE}}
+      # Fixed path on the runner host to this app's real .env (never
+      # committed to git) — NOT the fresh checkout's directory, which has
+      # no .env since it's gitignored. See docs/gitops-pipeline.md.
+      env_file_path: {{ENV_FILE_PATH}}
+      # One KEY=VALUE per image tag variable this app's stack file uses,
+      # space-separated, pinned to the tag build-push.yml just produced.
+      env_overrides: "{{VERSION_VAR}}=${{ needs.build.outputs.tag }}"
