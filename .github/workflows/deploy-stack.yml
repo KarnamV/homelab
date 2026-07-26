@@ -1,0 +1,62 @@
+name: Reusable - Deploy a Swarm stack
+
+# Called after build-push.yml. Runs on the homelab's self-hosted runner
+# (the only place that can reach the Swarm manager). Uses a fresh checkout
+# in the runner's own ephemeral workspace — NOT the persistent dev clone
+# under /home/bitforge/<app> — so this never touches anyone's in-progress
+# local edits. Secrets (.env) aren't in git, so the one real .env already
+# maintained on the host is copied in before deploying.
+
+on:
+  workflow_call:
+    inputs:
+      stack_name:
+        description: 'Swarm stack name, e.g. "nest"'
+        required: true
+        type: string
+      compose_file:
+        description: 'Compose/stack file path relative to the app repo root'
+        required: true
+        type: string
+      env_file_path:
+        description: 'Path on the runner host to the real .env for this app (e.g. /home/bitforge/nest/.env)'
+        required: true
+        type: string
+      env_overrides:
+        description: 'Space-separated KEY=VALUE pairs applied after .env (e.g. "NEST_VERSION=sha-abc1234")'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.stack_name }}
+    runs-on: [self-hosted, homelab]
+    steps:
+      - name: Check out app repo
+        uses: actions/checkout@v4
+
+      - name: Check out homelab repo (for stack-deploy.sh)
+        uses: actions/checkout@v4
+        with:
+          repository: KarnamV/homelab
+          path: _homelab
+
+      - name: Copy real .env into the deploy workspace
+        run: |
+          if [[ ! -f "${{ inputs.env_file_path }}" ]]; then
+            echo "::error::env_file_path not found on runner host: ${{ inputs.env_file_path }}"
+            exit 1
+          fi
+          cp "${{ inputs.env_file_path }}" ./.env
+
+      - name: Log in to GHCR (so the manager can pull the private image)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy
+        run: |
+          ./_homelab/scripts/stack-deploy.sh . "${{ inputs.stack_name }}" "${{ inputs.compose_file }}" ${{ inputs.env_overrides }}
