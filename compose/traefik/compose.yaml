@@ -38,6 +38,7 @@ services:
       proxy:
         aliases:
           - bitforge
+          - authentik.bitforge
           - homepage.bitforge
           - portainer.bitforge
           - uptime.bitforge

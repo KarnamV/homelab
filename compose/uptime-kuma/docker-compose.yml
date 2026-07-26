@@ -7,6 +7,9 @@ services:
     volumes:
       - ../../data/uptime-kuma:/app/data
 
+    dns:
+      - 192.168.0.165
+
     networks:
       - proxy
       - uptime-kuma
