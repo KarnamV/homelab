@@ -121,8 +121,9 @@ one directly just gets it replaced by the orchestrator — so:
 
 ## Adding a new application stack
 
-Not yet templated end-to-end (that's Phase 2+, once CI/CD and GHCR are
-wired up), but the pattern any new app stack should already follow, based
+CI/CD and GHCR are now wired up — see `docs/gitops-pipeline.md` for the
+full "adding a new app" walkthrough (runner registration, repo settings,
+caller workflow). The pattern the stack file itself should follow, based
 on Nest's `docker-compose.production.yml`:
 
 1. No `build:` — reference an image tag, built by CI or by hand.
