@@ -1,0 +1,17 @@
+name: Reusable - No-op test
+
+on:
+  workflow_call:
+    inputs:
+      services:
+        required: true
+        type: string
+      image_prefix:
+        required: true
+        type: string
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "hello, inputs.image_prefix=${{ inputs.image_prefix }}"
