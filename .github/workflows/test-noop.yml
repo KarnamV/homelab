@@ -13,10 +13,6 @@ on:
       tag:
         value: ${{ jobs.noop.outputs.tag }}
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   noop:
     runs-on: ubuntu-latest
