@@ -43,6 +43,15 @@ jobs:
       - id: tag
         run: echo "tag=sha-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
+      # Docker/GHCR image names must be all-lowercase; github.repository_owner
+      # preserves the account's actual casing (e.g. "KarnamV"), which fails
+      # `docker buildx build` with "repository name must be lowercase".
+      - id: names
+        run: |
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "prefix=$(echo '${{ inputs.image_prefix }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "service=$(echo '${{ matrix.service.name }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -55,5 +64,5 @@ jobs:
           file: ${{ matrix.service.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ inputs.image_prefix }}-${{ matrix.service.name }}:${{ steps.tag.outputs.tag }}
-            ghcr.io/${{ github.repository_owner }}/${{ inputs.image_prefix }}-${{ matrix.service.name }}:latest
+            ghcr.io/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.prefix }}-${{ steps.names.outputs.service }}:${{ steps.tag.outputs.tag }}
+            ghcr.io/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.prefix }}-${{ steps.names.outputs.service }}:latest
