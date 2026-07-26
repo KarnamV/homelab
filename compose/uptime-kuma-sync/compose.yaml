@@ -1,7 +1,9 @@
 services:
   uptime-kuma-sync:
-    build: .
-    container_name: uptime-kuma-sync
+    # `docker stack deploy` doesn't support `build:` — pre-built by
+    # `docker compose build` (or `docker build -t uptime-kuma-sync-uptime-kuma-sync .`)
+    # from this same directory's Dockerfile before deploying.
+    image: uptime-kuma-sync-uptime-kuma-sync
     restart: unless-stopped
 
     environment:
@@ -18,6 +20,21 @@ services:
     networks:
       - proxy
 
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 networks:
   proxy:
     external: true
+    name: proxy-swarm

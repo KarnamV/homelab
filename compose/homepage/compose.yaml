@@ -1,7 +1,6 @@
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
     restart: unless-stopped
 
     ports:
@@ -19,25 +18,53 @@ services:
       - homepage
       - proxy
 
-    labels:
-      - traefik.enable=true
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
 
-      # HTTP
-      - traefik.http.routers.homepage.entrypoints=web
-      - traefik.http.routers.homepage.rule=Host(`bitforge`) || Host(`homepage.bitforge`)
-      - traefik.http.routers.homepage.middlewares=redirect-to-https@file
+        # HTTP
+        - traefik.http.routers.homepage.entrypoints=web
+        - traefik.http.routers.homepage.rule=Host(`bitforge`) || Host(`homepage.bitforge`)
+        - traefik.http.routers.homepage.middlewares=redirect-to-https@file
 
-      # HTTPS
-      - traefik.http.routers.homepage-secure.entrypoints=websecure
-      - traefik.http.routers.homepage-secure.rule=Host(`bitforge`) || Host(`homepage.bitforge`)
-      - traefik.http.routers.homepage-secure.tls=true
+        # HTTPS — canonical host only. Authentik's forward_single Proxy
+        # Provider is tied to one literal external_host (homepage.bitforge);
+        # it does not recognize the `bitforge` alias, so that alias can't
+        # share this router (see the bare-alias redirect router below).
+        - traefik.http.routers.homepage-secure.entrypoints=websecure
+        - traefik.http.routers.homepage-secure.rule=Host(`homepage.bitforge`)
+        - traefik.http.routers.homepage-secure.tls=true
+        - traefik.http.routers.homepage-secure.priority=10
+        - traefik.http.routers.homepage-secure.middlewares=authentik-forwardauth@swarm
 
-      - traefik.http.services.homepage.loadbalancer.server.port=3000
+        # Bare `bitforge` (HTTPS) — redirect to the canonical host instead of
+        # serving it directly, so it never has to go through forward-auth
+        # itself (Authentik only knows about homepage.bitforge).
+        - traefik.http.routers.homepage-bare.entrypoints=websecure
+        - traefik.http.routers.homepage-bare.rule=Host(`bitforge`)
+        - traefik.http.routers.homepage-bare.tls=true
+        - traefik.http.routers.homepage-bare.middlewares=homepage-bare-redirect@swarm
+        - traefik.http.middlewares.homepage-bare-redirect.redirectregex.regex=^https://bitforge/(.*)
+        - traefik.http.middlewares.homepage-bare-redirect.redirectregex.replacement=https://homepage.bitforge/$${1}
+        - traefik.http.middlewares.homepage-bare-redirect.redirectregex.permanent=true
+
+        - traefik.http.services.homepage.loadbalancer.server.port=3000
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
 networks:
   homepage:
-    name: homepage
-    driver: bridge
 
   proxy:
     external: true
+    name: proxy-swarm

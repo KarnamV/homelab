@@ -1,0 +1,92 @@
+{
+  "uid": "obs-app-errors",
+  "title": "Application Errors",
+  "tags": ["observability", "loki", "errors"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "search",
+        "type": "textbox",
+        "label": "Stack trace search",
+        "query": "traceback|panic|Exception",
+        "current": { "text": "traceback|panic|Exception", "value": "traceback|panic|Exception" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "logs",
+      "title": "Errors From Every Container",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!=\"loki\"} | detected_level=\"error\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true, "enableLogDetails": true }
+    },
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "Warnings",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!=\"loki\"} | detected_level=\"warn\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true, "enableLogDetails": true }
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Panic",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 9 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!~\"loki|grafana\"} | detected_level!=\"info\" |~ \"(?i)panic\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Fatal",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 9 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!~\"loki|grafana\"} | detected_level!=\"info\" |~ \"(?i)fatal\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 5,
+      "type": "logs",
+      "title": "Exception",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 9 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!~\"loki|grafana\"} | detected_level!=\"info\" |~ \"(?i)exception\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 6,
+      "type": "logs",
+      "title": "Stack Trace Search ($search)",
+      "description": "Edit the search variable at the top of the dashboard to change the pattern.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 17 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\", container!~\"loki|grafana\"} | detected_level!=\"info\" |~ \"$search\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true, "enableLogDetails": true }
+    }
+  ]
+}

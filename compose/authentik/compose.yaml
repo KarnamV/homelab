@@ -1,14 +1,10 @@
 services:
   authentik-postgresql:
     image: docker.io/library/postgres:16-alpine
-    container_name: authentik-postgresql
     restart: unless-stopped
 
     security_opt:
       - no-new-privileges:true
-
-    env_file:
-      - .env
 
     environment:
       POSTGRES_DB: ${PG_DB:-authentik}
@@ -28,9 +24,22 @@ services:
     networks:
       - authentik
 
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        failure_action: rollback
+        monitor: 20s
+      rollback_config:
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
   authentik-server:
     image: ghcr.io/goauthentik/server:2026.5.5
-    container_name: authentik-server
     restart: unless-stopped
 
     security_opt:
@@ -38,14 +47,7 @@ services:
 
     command: server
 
-    depends_on:
-      authentik-postgresql:
-        condition: service_healthy
-
     shm_size: 512mb
-
-    env_file:
-      - .env
 
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY is required}
@@ -53,6 +55,13 @@ services:
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
 
     volumes:
       - ../../data/authentik/media:/media
@@ -62,44 +71,67 @@ services:
       - proxy
       - authentik
 
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.authentik.rule=Host(`authentik.bitforge`)
-      - traefik.http.routers.authentik.entrypoints=websecure
-      - traefik.http.routers.authentik.tls=true
-      - traefik.http.services.authentik.loadbalancer.server.port=9000
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.authentik.rule=Host(`authentik.bitforge`)
+        - traefik.http.routers.authentik.entrypoints=websecure
+        - traefik.http.routers.authentik.tls=true
+        - traefik.http.services.authentik.loadbalancer.server.port=9000
 
-      # Forward-auth (Phase 2): embedded outpost handles auth checks + the
-      # /outpost.goauthentik.io/ callback path on each protected app's own
-      # host. One router per protected host is needed for that callback path
-      # — this one is for portainer.bitforge (see compose/portainer/compose.yaml
-      # for the middleware attachment on Portainer's own router).
-      - traefik.http.middlewares.authentik-forwardauth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/traefik
-      - traefik.http.middlewares.authentik-forwardauth.forwardauth.trustForwardHeader=true
-      - traefik.http.middlewares.authentik-forwardauth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
+        # Forward-auth (Phase 2): embedded outpost handles auth checks + the
+        # /outpost.goauthentik.io/ callback path on each protected app's own
+        # host. One router per protected host is needed for that callback
+        # path — this one is for portainer.bitforge (see
+        # compose/portainer/compose.yaml for the middleware attachment on
+        # Portainer's own router).
+        - traefik.http.middlewares.authentik-forwardauth.forwardauth.address=http://authentik-server:9000/outpost.goauthentik.io/auth/traefik
+        - traefik.http.middlewares.authentik-forwardauth.forwardauth.trustForwardHeader=true
+        - traefik.http.middlewares.authentik-forwardauth.forwardauth.authResponseHeaders=X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version
 
-      - traefik.http.routers.authentik-outpost-portainer.rule=Host(`portainer.bitforge`) && PathPrefix(`/outpost.goauthentik.io/`)
-      - traefik.http.routers.authentik-outpost-portainer.entrypoints=websecure
-      - traefik.http.routers.authentik-outpost-portainer.tls=true
-      - traefik.http.routers.authentik-outpost-portainer.priority=15
-      - traefik.http.routers.authentik-outpost-portainer.service=authentik
+        - traefik.http.routers.authentik-outpost-portainer.rule=Host(`portainer.bitforge`) && PathPrefix(`/outpost.goauthentik.io/`)
+        - traefik.http.routers.authentik-outpost-portainer.entrypoints=websecure
+        - traefik.http.routers.authentik-outpost-portainer.tls=true
+        - traefik.http.routers.authentik-outpost-portainer.priority=15
+        - traefik.http.routers.authentik-outpost-portainer.service=authentik
+
+        # Same pattern for Homepage (compose/homepage/compose.yaml — note the
+        # bare `bitforge` alias is NOT covered here; it redirects to
+        # homepage.bitforge instead, since Authentik's forward_single Proxy
+        # Provider is tied to that one literal external_host) and Uptime Kuma
+        # (compose/uptime-kuma/docker-compose.yml).
+        - traefik.http.routers.authentik-outpost-homepage.rule=Host(`homepage.bitforge`) && PathPrefix(`/outpost.goauthentik.io/`)
+        - traefik.http.routers.authentik-outpost-homepage.entrypoints=websecure
+        - traefik.http.routers.authentik-outpost-homepage.tls=true
+        - traefik.http.routers.authentik-outpost-homepage.priority=15
+        - traefik.http.routers.authentik-outpost-homepage.service=authentik
+
+        - traefik.http.routers.authentik-outpost-uptime.rule=Host(`uptime.bitforge`) && PathPrefix(`/outpost.goauthentik.io/`)
+        - traefik.http.routers.authentik-outpost-uptime.entrypoints=websecure
+        - traefik.http.routers.authentik-outpost-uptime.tls=true
+        - traefik.http.routers.authentik-outpost-uptime.priority=15
+        - traefik.http.routers.authentik-outpost-uptime.service=authentik
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   authentik-worker:
     image: ghcr.io/goauthentik/server:2026.5.5
-    container_name: authentik-worker
     restart: unless-stopped
 
     command: worker
     user: root
 
-    depends_on:
-      authentik-postgresql:
-        condition: service_healthy
-
     shm_size: 512mb
-
-    env_file:
-      - .env
 
     environment:
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY is required}
@@ -107,6 +139,13 @@ services:
       AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -117,8 +156,27 @@ services:
     networks:
       - authentik
 
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 networks:
   proxy:
     external: true
+    name: proxy-swarm
 
   authentik:
+    name: authentik-swarm

@@ -1,0 +1,15 @@
+[Unit]
+Description=Nightly homelab backup (see homelab-backup.service)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+# If the machine was off/asleep at 02:00, run once at the next boot instead
+# of silently skipping a night.
+Persistent=true
+# Small jitter so this isn't perfectly synchronized with anything else that
+# might also be scheduled at exactly 02:00 (log rotation, etc.).
+RandomizedDelaySec=300
+Unit=homelab-backup.service
+
+[Install]
+WantedBy=timers.target

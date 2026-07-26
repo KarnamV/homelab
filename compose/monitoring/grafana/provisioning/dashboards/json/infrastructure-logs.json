@@ -1,0 +1,181 @@
+{
+  "uid": "obs-infra-logs",
+  "title": "Infrastructure Logs",
+  "tags": ["observability", "loki"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values(container)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": false,
+        "current": { "text": "All", "value": "$__all" },
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Useful LogQL Queries",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "**Reference queries for Explore / panel editing** (Loki datasource):\n\n- `{container=\"traefik\"}`\n- `{container=\"grafana\"}`\n- `{container=\"prometheus\"}`\n- `{container=\"loki\"}`\n- `{container=\"promtail\"}`\n- All containers: `{container=~\".+\"}` (a bare `{}` is rejected by Loki - it requires at least one non-empty-compatible matcher)\n"
+      }
+    },
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "Live Logs From Every Container",
+      "description": "Auto-refreshes every 30s to approximate live tailing. Use Explore's Live button for true streaming.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\"}", "refId": "A" }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Structured Table (Time / Container / Level / Message)",
+      "description": "Uses Loki's auto-detected level, which works across every container regardless of its own log format (logfmt, JSON, plain text).",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 15 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\"}", "refId": "A", "maxLines": 200 }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": { "source": "labels", "format": "auto", "replace": false, "keepTime": false }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "tsNs": true,
+              "id": true,
+              "labels": true,
+              "labelTypes": true,
+              "compose_project": true,
+              "compose_service": true,
+              "hostname": true,
+              "service_name": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "container": 1,
+              "detected_level": 2,
+              "Line": 3
+            },
+            "renameByName": {
+              "container": "Container",
+              "detected_level": "Level",
+              "Line": "Message"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Level" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "info": { "color": "green" },
+                      "debug": { "color": "blue" },
+                      "warn": { "color": "orange" },
+                      "error": { "color": "red" },
+                      "critical": { "color": "red" }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Message" },
+            "properties": [{ "id": "custom.width", "value": 700 }]
+          }
+        ]
+      },
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Latest Logs",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 24 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\".+\"}", "refId": "A", "maxLines": 100 }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false,
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Logs Grouped by Container",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 24 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "sum by (container) (count_over_time({container=~\".+\"}[$__interval]))",
+          "refId": "A",
+          "legendFormat": "{{container}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "logs",
+      "title": "Search by Label ($container)",
+      "description": "Use the container variable at the top of the dashboard to filter.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 33 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=~\"$container\"}", "refId": "A" }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
+    }
+  ]
+}

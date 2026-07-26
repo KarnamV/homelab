@@ -1,7 +1,6 @@
 services:
   promtail:
     image: grafana/promtail:3.6.11
-    container_name: promtail
     restart: unless-stopped
 
     command: -config.file=/etc/promtail/config.yml
@@ -15,6 +14,27 @@ services:
     networks:
       - proxy
 
+    # No healthcheck: grafana/promtail's image has no shell or wget to probe
+    # with. Same as before this migration.
+
+    deploy:
+      # A log shipper needs to run on every node, not a fixed replica count —
+      # `mode: global` gives that automatically if this homelab ever grows
+      # past one node, with no config change needed.
+      mode: global
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 networks:
   proxy:
     external: true
+    name: proxy-swarm

@@ -1,17 +1,25 @@
+# Traefik — Docker Swarm ingress.
+#
+# Ports are parameterized so the same file can be deployed twice during a
+# migration: once on temporary ports to validate a new setup in parallel
+# with whatever's already holding 80/443/8080, then again on the real ports
+# once validated (see homelab/docs/swarm-migration.md). Normal day-to-day
+# deploys just omit the .env overrides and get the real ports below.
 services:
   traefik:
     image: traefik:v3.6.1
-
-    container_name: traefik
 
     restart: unless-stopped
 
     command:
       - "--api.dashboard=true"
+      - "--ping=true"
 
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=proxy"
+      - "--providers.swarm=true"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=proxy-swarm"
+      - "--providers.swarm.watch=true"
 
       - "--providers.file.directory=/config"
       - "--providers.file.watch=true"
@@ -26,14 +34,21 @@ services:
       - "--accesslog.format=json"
 
     ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
+      - target: 80
+        published: ${TRAEFIK_WEB_PORT:-80}
+        mode: host
+      - target: 443
+        published: ${TRAEFIK_WEBSECURE_PORT:-443}
+        mode: host
+      - target: 8080
+        published: ${TRAEFIK_DASHBOARD_PORT:-8080}
+        mode: host
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./config:/config:ro
       - /home/bitforge/homelab/certs:/certs:ro
+
     networks:
       proxy:
         aliases:
@@ -43,6 +58,34 @@ services:
           - portainer.bitforge
           - uptime.bitforge
 
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          # The Swarm API (which providers.swarm polls) is only exposed on
+          # manager nodes.
+          - node.role == manager
+      update_config:
+        order: stop-first
+        delay: 5s
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 networks:
   proxy:
     external: true
+    name: proxy-swarm

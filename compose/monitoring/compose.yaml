@@ -1,0 +1,175 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/
+    volumes:
+      - /:/host:ro,rslave
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9100/metrics"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.cadvisor.rule=Host(`cadvisor.bitforge`)
+        - traefik.http.routers.cadvisor.entrypoints=websecure
+        - traefik.http.routers.cadvisor.tls=true
+        - traefik.http.services.cadvisor.loadbalancer.server.port=8080
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.bitforge`)
+        - traefik.http.routers.prometheus.entrypoints=websecure
+        - traefik.http.routers.prometheus.tls=true
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      # Native OIDC SSO via Authentik (OAuth2/OpenID Provider "Grafana", see
+      # homelab/docs/authentik.md). Grafana supports this natively, so it
+      # uses OIDC directly rather than Traefik forward-auth. Local
+      # admin/admin login stays enabled as a fallback.
+      GF_SERVER_ROOT_URL: https://grafana.bitforge
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: Authentik
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: JWbfsitgHi4tfkOQyVnFnUCsRwckDVBf8kZodpIu
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: "openid email profile groups"
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: https://authentik.bitforge/application/o/authorize/
+      # Server-to-server calls use the internal container address, not the
+      # public HTTPS host — same TLS-trust reasoning as Portainer's OIDC
+      # setup (see docs/authentik.md Phase 2b, bug #1).
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://authentik-server:9000/application/o/token/
+      GF_AUTH_GENERIC_OAUTH_API_URL: http://authentik-server:9000/application/o/userinfo/
+      GF_AUTH_GENERIC_OAUTH_SIGNOUT_REDIRECT_URL: https://authentik.bitforge/application/o/grafana/end-session/
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+      # Homelab Admins -> Grafana org Admin, everyone else who reaches
+      # Grafana -> Viewer. Does not grant Grafana server-admin.
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(groups[*], 'Homelab Admins') && 'Admin' || 'Viewer'"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    deploy:
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.grafana.rule=Host(`grafana.bitforge`)
+        - traefik.http.routers.grafana.entrypoints=websecure
+        - traefik.http.routers.grafana.tls=true
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    labels:
+      # Container-level (not deploy.labels): uptime-kuma-sync reads these
+      # directly off the container via the Docker socket, a different API
+      # object from Swarm service labels.
+      - uptime.enable=true
+      - uptime.name=Grafana
+      - uptime.url=http://grafana:3000
+      - uptime.group=Infrastructure
+
+volumes:
+  grafana-data:
+  prometheus-data:
+
+networks:
+  proxy:
+    external: true
+    name: proxy-swarm

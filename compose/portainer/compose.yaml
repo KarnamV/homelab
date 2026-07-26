@@ -1,7 +1,6 @@
 services:
   portainer:
     image: portainer/portainer-ce:lts
-    container_name: portainer
 
     restart: unless-stopped
 
@@ -16,14 +15,39 @@ services:
       - proxy
       - portainer
 
+    # No healthcheck: portainer-ce's image ships no shell utilities at all
+    # (no wget/curl/nc), so there's no CMD available to probe it with — same
+    # as before this migration (it was never health-checked). Uptime Kuma
+    # monitors it externally over HTTP instead (see uptime.* labels below).
+
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.portainer.rule=Host(`portainer.bitforge`)
+        - traefik.http.routers.portainer.entrypoints=websecure
+        - traefik.http.routers.portainer.tls=true
+        - traefik.http.routers.portainer.priority=10
+        - traefik.http.routers.portainer.middlewares=authentik-forwardauth@swarm
+        - traefik.http.services.portainer.loadbalancer.server.port=9000
+      update_config:
+        order: start-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.portainer.rule=Host(`portainer.bitforge`)
-      - traefik.http.routers.portainer.entrypoints=websecure
-      - traefik.http.routers.portainer.tls=true
-      - traefik.http.routers.portainer.priority=10
-      - traefik.http.routers.portainer.middlewares=authentik-forwardauth@docker
-      - traefik.http.services.portainer.loadbalancer.server.port=9000
+      # Container-level (not deploy.labels): uptime-kuma-sync reads these
+      # directly off the container via the Docker socket.
       - uptime.enable=true
       - uptime.name=Portainer
       - uptime.url=http://portainer:9000
@@ -32,6 +56,6 @@ services:
 networks:
   proxy:
     external: true
+    name: proxy-swarm
 
   portainer:
-    name: portainer

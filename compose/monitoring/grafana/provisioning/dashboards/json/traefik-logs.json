@@ -1,0 +1,296 @@
+{
+  "uid": "obs-traefik-logs",
+  "title": "Traefik Logs",
+  "tags": ["observability", "loki", "traefik"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": true,
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "logs",
+      "title": "Live Requests (raw JSON)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} |= \"RequestPath\" | json", "refId": "A" }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Requests (Time / Method / Host / Path / Status / Duration)",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 9 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{container=\"traefik\"} |= \"RequestPath\" | json Method=\"RequestMethod\", Host=\"RequestHost\", Path=\"RequestPath\", Status=\"DownstreamStatus\", Duration=\"Duration\"",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": { "source": "labels", "format": "auto", "replace": false, "keepTime": false }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "tsNs": true,
+              "id": true,
+              "labels": true,
+              "labelTypes": true,
+              "compose_project": true,
+              "compose_service": true,
+              "container": true,
+              "detected_level": true,
+              "hostname": true,
+              "service_name": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Method": 1,
+              "Host": 2,
+              "Path": 3,
+              "Status": 4,
+              "Duration": 5
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Duration" },
+            "properties": [{ "id": "unit", "value": "ns" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Status" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "orange", "value": 400 },
+                    { "color": "red", "value": 500 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Requests/sec",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "sum(rate({container=\"traefik\"} |= \"RequestPath\" | json | __error__=\"\" [$__interval]))",
+          "refId": "A",
+          "legendFormat": "requests/s"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "type": "piechart",
+      "title": "Status Code Distribution",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "sum by (DownstreamStatus) (count_over_time({container=\"traefik\"} |= \"RequestPath\" | json | __error__=\"\" [$__range]))",
+          "refId": "A",
+          "legendFormat": "{{DownstreamStatus}}",
+          "instant": true
+        }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] } }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Top 404 URLs",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (RequestPath) (count_over_time({container=\"traefik\"} |= \"RequestPath\" | json | __error__=\"\" | DownstreamStatus=\"404\" [$__range])))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "RequestPath": "Path", "Value": "Count" }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Count", "desc": true }] } }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Top 500 Errors",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (RequestPath) (count_over_time({container=\"traefik\"} |= \"RequestPath\" | json | __error__=\"\" | DownstreamStatus>=500 [$__range])))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "RequestPath": "Path", "Value": "Count" }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Count", "desc": true }] } }
+      ],
+      "options": { "showHeader": true }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Slowest Requests",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 35 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{container=\"traefik\"} |= \"RequestPath\" | json Method=\"RequestMethod\", Host=\"RequestHost\", Path=\"RequestPath\", Status=\"DownstreamStatus\", Duration=\"Duration\"",
+          "refId": "A",
+          "maxLines": 1000
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": { "source": "labels", "format": "auto", "replace": false, "keepTime": false }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Line": true,
+              "tsNs": true,
+              "id": true,
+              "labels": true,
+              "labelTypes": true,
+              "compose_project": true,
+              "compose_service": true,
+              "container": true,
+              "detected_level": true,
+              "hostname": true,
+              "service_name": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Method": 1,
+              "Host": 2,
+              "Path": 3,
+              "Status": 4,
+              "Duration": 5
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Duration" }, "properties": [{ "id": "unit", "value": "ns" }] }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Duration", "desc": true }]
+      }
+    },
+    {
+      "id": 8,
+      "type": "logs",
+      "title": "Errors",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} | json | level=\"error\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 9,
+      "type": "logs",
+      "title": "Warnings",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} | json | level=\"warn\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 10,
+      "type": "logs",
+      "title": "HTTP 404",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 52 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} | json | DownstreamStatus=\"404\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 11,
+      "type": "logs",
+      "title": "HTTP 500",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 52 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} | json | DownstreamStatus>=500", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    },
+    {
+      "id": 12,
+      "type": "logs",
+      "title": "TLS Errors",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 52 },
+      "datasource": "Loki",
+      "targets": [
+        { "expr": "{container=\"traefik\"} | json | level=\"error\" |~ \"(?i)tls\"", "refId": "A" }
+      ],
+      "options": { "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true }
+    }
+  ]
+}

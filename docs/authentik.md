@@ -7,6 +7,20 @@ the homelab.
 - **Phase 2** (done, proof of concept): Traefik forward-auth protecting
   Portainer via Authentik's embedded outpost. See "Phase 2: forward-auth"
   below for how it's wired and how to add another service.
+- **Phase 3** (done): Homepage and Uptime Kuma added behind the same
+  forward-auth pattern as Portainer; Grafana wired up with native OIDC
+  instead. Group-based authorization (`Homelab Admins` / `Homelab Users`)
+  applied to every Application. See "Phase 3: authorization architecture"
+  below.
+
+> **Deployment model note:** since the Docker Swarm migration
+> (`docs/swarm-migration.md`), Authentik runs as a Swarm stack
+> (`docker stack deploy`, not `docker compose up`) — `docker compose`
+> commands referenced below (`up`, `ps`, `logs`, `exec`) translate to
+> `scripts/stack-deploy.sh`, `docker service ps`, `docker service logs`,
+> and `docker exec` against the resolved container from
+> `docker ps -f name=authentik_authentik-server.` respectively. See that doc
+> for the full command mapping.
 
 > No existing doc convention existed in `homelab/docs/` (the directory was
 > empty) — this file's structure follows the README written for
@@ -483,3 +497,178 @@ reach Portainer.
    of auto-provisioning) — assume every app enforces *some* form of this,
    since Portainer did and it's a reasonable default for any app that
    distinguishes user roles/permissions.
+
+## Phase 3: Homepage, Uptime Kuma, Grafana + authorization architecture
+
+Extends the pattern from Phase 2/2b to the rest of the dashboard, and closes
+the gap that Phase 2 left open: until now, no Application had any policy
+bindings, so *any* authenticated user (anyone who could complete an Authentik
+login) got into Portainer. Phase 3 adds real group-based authorization.
+
+### Which integration each app uses, and why
+
+| App | Integration | Why |
+|---|---|---|
+| Portainer | Forward-auth (Phase 2) **+** native OIDC (Phase 2b) | Supports OIDC natively; forward-auth adds a network-level gate in front of it. Unchanged by Phase 3. |
+| Homepage | Forward-auth only | It's a static dashboard with no login system of its own — nothing to hand a session to. Forward-auth is the only option. |
+| Uptime Kuma | Forward-auth only | Running `louislam/uptime-kuma:1` (the 1.x line) — no OIDC/OAuth support exists in that major version. Forward-auth is the only option on this image. If this ever moves to Uptime Kuma 2.x, re-evaluate: later versions add native SSO and native OIDC would then be preferable, same reasoning as Portainer. |
+| Grafana | Native OIDC only, no forward-auth | Grafana has first-class `generic_oauth` support, including mapping IdP groups to Grafana org roles — something forward-auth can't do (it only gates the HTTP request, it can't tell Grafana who's an admin). Using both would be redundant: the OIDC login already requires authenticating through Authentik. |
+
+Rule of thumb for future services (see checklist at the bottom): prefer
+native OIDC when the app supports it *and* you want its role/permission
+system to follow Authentik group membership. Fall back to forward-auth for
+anything with no login system, or that only supports header/proxy-auth
+trust.
+
+### How each was wired
+
+**Homepage** and **Uptime Kuma** replicate Portainer's Phase 2 forward-auth
+pattern exactly — reusing the same `authentik-forwardauth@docker` middleware
+and the same embedded outpost (`079ff7fc-287f-4aac-9e4b-d4cb6e81d611`, now
+carrying providers `[Portainer, Homepage, Uptime Kuma]`):
+
+- New Proxy Providers (`mode=forward_single`): `Homepage`
+  (`external_host=https://homepage.bitforge`) and `Uptime Kuma`
+  (`external_host=https://uptime.bitforge`), both using the same
+  authorization/invalidation flows as Portainer's provider.
+- New Applications `Homepage` (slug `homepage`) and `Uptime Kuma`
+  (slug `uptime-kuma`), each linked to its provider.
+- New outpost-callback routers on `authentik-server`'s labels
+  (`compose/authentik/compose.yaml`): `authentik-outpost-homepage` and
+  `authentik-outpost-uptime`, same `PathPrefix(/outpost.goauthentik.io/)` +
+  `priority=15` pattern as Portainer's.
+- `authentik-forwardauth@docker` + `priority=10` added to each app's own
+  HTTPS router (`compose/homepage/compose.yaml`'s `homepage-secure`,
+  `compose/uptime-kuma/docker-compose.yml`'s `uptime`).
+
+**Gotcha hit doing this**: Homepage is reachable under two hostnames
+(`bitforge` and `homepage.bitforge`, both handled by one Traefik router
+before this change). Authentik's `forward_single` Proxy Provider binds to
+exactly one literal `external_host` — it has no concept of "aliases" for a
+protected app. Pointing both hostnames at the same forward-auth-protected
+router made `homepage.bitforge` work but made bare `bitforge` return a raw
+404 *from Authentik itself* (`x-powered-by: authentik` in the response) —
+its outpost has no application configured for the literal host `bitforge`,
+only for `homepage.bitforge`. Fixed by splitting them: `homepage-secure`
+now matches only `Host(\`homepage.bitforge\`)` and carries the forward-auth
+middleware; a new `homepage-bare` router matches `Host(\`bitforge\`)` and
+carries a `redirectregex` middleware (`homepage-bare-redirect`, permanent
+301) straight to `https://homepage.bitforge/`, so the alias never has to go
+through Authentik's host matching at all. **If you add forward-auth to any
+other service that's reachable under multiple hostnames, do the same split
+up front** rather than discovering this the same way.
+
+**Grafana** uses native OIDC only (no outpost/forward-auth involved):
+
+- New OAuth2/OpenID Provider `Grafana` (`client_type=confidential`,
+  `grant_types=[authorization_code, refresh_token]`, redirect URI
+  `https://grafana.bitforge/login/generic_oauth`, STRICT matching).
+- Property mappings: the three built-in `openid`/`email`/`profile` scope
+  mappings, **plus a new custom one** — `authentik default OAuth Mapping:
+  Homelab groups` (scope `groups`, expression
+  `return {"groups": [group.name for group in request.user.groups.all()]}`)
+  — needed because no existing scope mapping in this Authentik install
+  emits group membership, and Grafana's role sync needs it.
+- New Application `Grafana` (slug `grafana`), not hidden — it's the only
+  Application for this app, unlike Portainer's two-application split,
+  since there's no separate forward-auth gate to also represent.
+- Grafana side: `compose.yaml` in `/home/bitforge/docker/monitoring/`
+  (**not part of this git repo** — see note below) gets
+  `GF_AUTH_GENERIC_OAUTH_*` environment variables plus `GF_SERVER_ROOT_URL`
+  (required — without it Grafana builds its redirect URI from the default
+  `http://localhost:3000`, which won't match the registered redirect URI).
+  Same internal-vs-public URL split as Portainer's OIDC setup (Phase 2b,
+  bug #1): `AUTH_URL` is the public `https://authentik.bitforge/...`
+  (browser-facing), `TOKEN_URL`/`API_URL` are the internal
+  `http://authentik-server:9000/...` (server-to-server, both containers
+  share the `proxy` Docker network). The client secret lives in
+  `/home/bitforge/docker/monitoring/.env` (`env_file:`, not committed —
+  same convention as `homelab/compose/*/.env`), never in the compose file
+  or in chat.
+- Role sync: `GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH` is
+  `contains(groups[*], 'Homelab Admins') && 'Admin' || 'Viewer'` (JMESPath)
+  — members of `Homelab Admins` land as Grafana org Admins, everyone else as
+  Viewers. This does **not** set Grafana's own server-admin flag
+  (`GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN` was left unset/false)
+  — deliberately more conservative than granting full Grafana superadmin
+  just for being a Homelab Admin; revisit if that turns out to be needed.
+  Local `admin`/password login is left enabled as a fallback (matches the
+  caution already taken with Portainer, which needed a fallback local
+  account — see Phase 2b bug #4).
+
+  > **Note on `/home/bitforge/docker/monitoring/`**: this directory (where
+  > Grafana/Prometheus/cAdvisor/node-exporter actually run) is **not** a git
+  > repository — `git status` there fails with "not a git repository". It
+  > predates/sits outside `homelab/`. The Grafana OIDC changes for this
+  > phase live there, not under `homelab/compose/`, and so aren't tracked by
+  > this repo's version control. Consider moving it into `homelab/compose/`
+  > (or its own repo) as follow-up work.
+
+### Authorization architecture
+
+Two groups now exist, created for this phase (didn't exist before —
+previously the only groups were the built-in `authentik Admins` superuser
+group and `authentik Read-only`):
+
+- **`Homelab Admins`** — bound to *every* Application (`portainer`,
+  `portainer-oidc`, `homepage`, `uptime-kuma`, `grafana`). Members get
+  access to everything. `akadmin` was added to this group (in addition to
+  its existing `authentik Admins` superuser membership, which is unrelated
+  — superusers already bypass all policy checks; `Homelab Admins` is what
+  actually drives the "can see/launch this app" decision for the group of
+  people you'd call homelab admins, without necessarily handing out full
+  Authentik superuser/Django-admin rights too).
+- **`Homelab Users`** — created, currently empty, **not bound to any
+  Application**. This is deliberate: per-app access for a non-admin user is
+  granted by explicitly binding either that user or a group to the specific
+  Application(s) they should reach (Admin interface → Applications →
+  \<app\> → Policy/Group/User Bindings), not by a single blanket
+  "Homelab Users can see everything" rule. `Homelab Users` exists as the
+  base group to put ordinary accounts in; it doesn't itself grant any app
+  access.
+
+**To give a non-admin user access to one app** (e.g. Uptime Kuma only):
+Admin interface → Applications → Uptime Kuma → Policy/Group/User Bindings →
+bind that user directly, or bind a new group if you expect to grant the
+same app to several people at once. Do **not** bind `Homelab Users`
+directly to an app unless you actually want *every* non-admin account to
+reach it — prefer per-app groups (e.g. a hypothetical `Monitoring Viewers`)
+or per-user bindings instead, so "explicitly assigned" stays true.
+
+An Application with zero bindings is reachable by any authenticated user —
+this was the pre-Phase-3 state for Portainer, effectively open access to
+anyone who could log in to Authentik at all. Keep that in mind if you ever
+create a new Application and forget the binding step: it fails open, not
+closed.
+
+### Checklist: adding another service's SSO
+
+1. Decide forward-auth vs native OIDC (see table above — native OIDC if the
+   app supports it and you want group→role sync, forward-auth otherwise).
+2. **If the app is reachable under more than one hostname**, decide its one
+   canonical hostname up front and redirect the others to it — don't try to
+   protect multiple aliases with one `forward_single` provider (see the
+   Homepage gotcha above).
+3. Forward-auth: new Proxy Provider + Application, attach the provider to
+   the embedded outpost's `providers` list, add an
+   `authentik-outpost-<service>` router on `authentik-server`'s labels, add
+   `authentik-forwardauth@docker` + a `priority=10` to the service's own
+   router (see Phase 2's checklist above for the API/curl version of this).
+   Native OIDC: new OAuth2/OpenID Provider + Application, explicitly set
+   `grant_types` and `property_mappings` (see Phase 2b checklist above), add
+   the redirect URI, configure the app's own OAuth settings
+   (internal vs public URLs).
+4. Bind `Homelab Admins` to the new Application. Decide separately whether
+   any `Homelab Users` (or a new per-app group/specific users) should also
+   get a binding — default to *not* binding anything else, per the
+   authorization architecture above.
+5. Traefik: reuse `authentik-forwardauth@docker` as-is (host-agnostic); for
+   native OIDC there's no Traefik change needed beyond what already routes
+   the app.
+6. Update `homelab/data/homepage/services.yaml` if the tile's description
+   should note the auth method (see the existing tiles for wording).
+7. Verify: `curl -sk -H 'Host: <service>.bitforge' https://127.0.0.1/ -D -`
+   should 302 to `authentik.bitforge` (forward-auth) or the app's own login
+   page should show/redirect to an Authentik option (native OIDC); confirm
+   in a real browser that login actually completes and lands back on the
+   app.

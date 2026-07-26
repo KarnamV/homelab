@@ -1,7 +1,6 @@
 services:
   loki:
     image: grafana/loki:3.7.3
-    container_name: loki
     restart: unless-stopped
 
     user: "1000:1000"
@@ -15,6 +14,24 @@ services:
     networks:
       - proxy
 
+    # No healthcheck: grafana/loki's image has no shell or wget to probe
+    # with (same for promtail's image). Same as before this migration.
+
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        failure_action: rollback
+        monitor: 15s
+      rollback_config:
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
 networks:
   proxy:
     external: true
+    name: proxy-swarm

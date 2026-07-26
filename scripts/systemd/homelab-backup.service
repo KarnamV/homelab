@@ -1,0 +1,26 @@
+[Unit]
+Description=homelab nightly backup (backup.sh)
+Documentation=file:///home/bitforge/homelab/docs/backup-restore.md
+# Backups read from Docker (docker.sock) — no point running before it's up.
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=bitforge
+Group=bitforge
+WorkingDirectory=/home/bitforge/homelab/scripts
+ExecStart=/home/bitforge/homelab/scripts/backup.sh
+# Keep the running stack responsive — backup.sh is read-heavy and can take
+# a while (Loki/Prometheus in particular); don't let it starve the actual
+# services it's backing up.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# journalctl -u homelab-backup captures the same content as
+# backups/logs/backup-*.log (backup.sh logs to both).
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
